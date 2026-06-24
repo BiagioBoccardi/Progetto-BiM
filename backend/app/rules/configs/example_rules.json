@@ -1,0 +1,30 @@
+{
+  "ruleset": "esempio-generico",
+  "description": "Regole DI ESEMPIO, non una normativa reale. Dimostrano il formato dichiarativo: selezione per categoria/tag/classe IFC + asserzione su parametri o relazioni. Le normative reali (es. NTC) si caricano sostituendo questo file, senza toccare il codice (RF-5.4 / sezione 10).",
+  "rules": [
+    {
+      "id": "wall-min-thickness",
+      "description": "Spessore minimo di esempio per i muri.",
+      "selector": { "tag": "wall" },
+      "assert": { "parameter": "thickness", "op": ">=", "value": 0.1 },
+      "severity": "error",
+      "message": "Lo spessore del muro è sotto il minimo di esempio (0.10 m)."
+    },
+    {
+      "id": "door-min-height",
+      "description": "Altezza minima di esempio per le porte.",
+      "selector": { "tag": "door" },
+      "assert": { "parameter": "height", "op": ">=", "value": 2.0 },
+      "severity": "warning",
+      "message": "L'altezza della porta è sotto il valore di esempio (2.00 m)."
+    },
+    {
+      "id": "component-must-hang-on-architecture",
+      "description": "I componenti di dettaglio devono agganciarsi a un elemento architettonico.",
+      "selector": { "category": "Component" },
+      "assert": { "relation": "parent_category", "op": "==", "value": "Architecture" },
+      "severity": "error",
+      "message": "Il componente non è agganciato a un elemento di categoria Architecture."
+    }
+  ]
+}
