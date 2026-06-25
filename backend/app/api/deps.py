@@ -1,34 +1,45 @@
-"""Dipendenze condivise: store dei profili, registro, motore, regole, assistant.
-
-Store in-memory: il documento è esplicito nel NON persistere mesh; in questa fase
-non serve un DB. La persistenza dei *profili* (lista di Component Instance) potrà
-essere aggiunta dietro questa stessa interfaccia.
-"""
+"""Dipendenze condivise: store dei profili, registro, motore, regole, assistant."""
 from __future__ import annotations
 
 from ..ai.assistant import DesignAssistant
 from ..blender_jobs.headless_engine import StubHeadlessEngine
 from ..config import settings
+from ..db import db_delete_profile, db_get_profile, db_list_profiles, db_save_profile
 from ..kernel.model import BuildingModel
 from ..kernel.registry import DefinitionRegistry, default_registry
 from ..rules.engine import RuleEngine, RuleSet
 
 
 class ProfileStore:
-    def __init__(self) -> None:
-        self._profiles: dict[str, BuildingModel] = {}
-
-    def save(self, model: BuildingModel) -> None:
-        self._profiles[model.profile_id] = model
+    def save(self, model: BuildingModel, canvas_data: dict | None = None) -> dict:
+        data = model.to_dict()
+        if canvas_data:
+            by_id = canvas_data
+            for comp in data.get("components", []):
+                cv = by_id.get(comp["id"])
+                if cv:
+                    comp["canvasData"] = cv
+        db_save_profile(model.profile_id, data)
+        return data
 
     def get(self, profile_id: str) -> BuildingModel | None:
-        return self._profiles.get(profile_id)
+        data = db_get_profile(profile_id)
+        if data is None:
+            return None
+        registry = default_registry()
+        engine = StubHeadlessEngine()
+        return BuildingModel.from_dict(data, engine=engine, registry=registry, validate_hierarchy=False)
+
+    def get_raw(self, profile_id: str) -> dict | None:
+        return db_get_profile(profile_id)
 
     def ids(self) -> list[str]:
-        return sorted(self._profiles)
+        return db_list_profiles()
+
+    def delete(self, profile_id: str) -> bool:
+        return db_delete_profile(profile_id)
 
 
-# Singletons di processo (monolite con confini interni puliti, sezione 5).
 _store = ProfileStore()
 _registry = default_registry()
 _engine = StubHeadlessEngine()

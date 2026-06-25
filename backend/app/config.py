@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     app_name: str = "BIM AI Backend"
     allowed_origins: list[str] = ["http://localhost:5173"]
     default_ruleset_path: str = str(_DEFAULT_RULESET)
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/bim_ai"
+    jwt_secret: str = "bim-ai-secret-change-in-production"
+    jwt_expire_hours: int = 24
 
 
 settings = Settings()

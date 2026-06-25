@@ -208,6 +208,7 @@ class BuildingModel:
         registry: DefinitionRegistry,
         event_bus: EventBus | None = None,
         regenerate: bool = True,
+        validate_hierarchy: bool = True,
     ) -> "BuildingModel":
         model = cls(
             profile_id=data.get("profileId", "profile"),
@@ -219,7 +220,8 @@ class BuildingModel:
             definition = registry.resolve(raw)
             component = Component.from_dict(raw, definition, model.event_bus)
             model.add(component)
-        model.validate_hierarchy()
+        if validate_hierarchy:
+            model.validate_hierarchy()
         if regenerate:
             model.regenerate()
         return model

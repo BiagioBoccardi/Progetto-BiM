@@ -39,7 +39,7 @@ const MODE_DESCS = {
 }
 
 export default function AIPanel() {
-  const { aiMode, setAIMode, aiMessages, sendAICommand, pendingPlan, applyPlan, rejectPlan, currentProfile, status } = useAppStore()
+  const { aiMode, setAIMode, aiMessages, sendAICommand, pendingPlan, applyPlan, rejectPlan, currentProfile, aiLoading } = useAppStore()
   const [input, setInput] = useState('')
   const msgRef = useRef()
 
@@ -72,7 +72,7 @@ export default function AIPanel() {
         {aiMessages.map((m, i) => (
           <div key={i} style={s.bubble(m.role)}>{m.text}</div>
         ))}
-        {status.type === 'loading' && <div style={{ fontSize: 10, color: '#607080', alignSelf: 'flex-start' }}>AI sta elaborando…</div>}
+        {aiLoading && <div style={{ fontSize: 10, color: '#607080', alignSelf: 'flex-start' }}>AI sta elaborando…</div>}
 
         {pendingPlan && (
           <div style={s.planBox}>

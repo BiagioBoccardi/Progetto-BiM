@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import useAppStore from './store/useAppStore.js'
+import AuthPage from './pages/AuthPage.jsx'
 import ProjectsPage from './pages/ProjectsPage.jsx'
 import Toolbar from './components/Toolbar.jsx'
 import LeftPanel from './components/LeftPanel.jsx'
@@ -57,7 +58,8 @@ function Editor() {
 }
 
 export default function App() {
-  const { page, loadProfiles } = useAppStore()
-  useEffect(() => { loadProfiles() }, [])
+  const { page, token, loadProfiles } = useAppStore()
+  useEffect(() => { if (token) loadProfiles() }, [token])
+  if (!token) return <AuthPage />
   return page === 'editor' ? <Editor /> : <ProjectsPage />
 }

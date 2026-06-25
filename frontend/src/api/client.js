@@ -2,6 +2,19 @@ import axios from 'axios'
 
 const api = axios.create({ baseURL: '/api' })
 
+let _token = null
+export const setAuthToken = (t) => { _token = t }
+
+api.interceptors.request.use(cfg => {
+  if (_token) cfg.headers.Authorization = `Bearer ${_token}`
+  return cfg
+})
+
+export const authRegister = (username, password) =>
+  axios.post('/auth/register', { username, password }).then(r => r.data)
+export const authLogin = (username, password) =>
+  axios.post('/auth/login', { username, password }).then(r => r.data)
+
 export const listProfiles = () => api.get('/profiles').then(r => r.data)
 export const getProfile = id => api.get(`/profiles/${id}`).then(r => r.data)
 export const createProfile = body => api.post('/profiles', body).then(r => r.data)
@@ -9,6 +22,7 @@ export const setParameter = (profileId, componentId, name, value) =>
   api.patch(`/profiles/${profileId}/components/${componentId}/parameters/${name}`, { value }).then(r => r.data)
 export const validateProfile = id => api.post(`/profiles/${id}/validate`).then(r => r.data)
 export const exportIFC = id => api.post(`/profiles/${id}/export/ifc`).then(r => r.data)
+export const deleteProfile = id => api.delete(`/profiles/${id}`).then(r => r.data)
 export const sendAICommand = (id, command, mode) =>
   api.post(`/profiles/${id}/ai`, { command, mode }).then(r => r.data)
 export const applyPlan = (id, command, operations) =>

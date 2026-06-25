@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import useAppStore, { STRUCTURE_TEMPLATES, PIANTINA_DEFAULTS } from '../store/useAppStore.js'
+import useAppStore, { STRUCTURE_TEMPLATES, PIANTINA_DEFAULTS, LIBRARY_COMPONENTS } from '../store/useAppStore.js'
 
 // ─── shared styles ──────────────────────────────────────────────────────────
 const C = {
@@ -285,6 +285,71 @@ function PiantinaPreview({ shape }) {
   )
 }
 
+// ─── Library Panel ──────────────────────────────────────────────────────────
+function LibraryPanel() {
+  const { drawingTool, setDrawingTool, canvasMode, setCanvasMode, setViewMode } = useAppStore()
+
+  const handleSelect = (comp) => {
+    if (drawingTool === comp.id) {
+      setDrawingTool('select')
+      return
+    }
+    // Il disegno avviene sempre in 2D — switcha vista se necessario
+    setViewMode('2d')
+    // Switcha anche la modalità canvas se necessario
+    if (comp.canvasMode && canvasMode !== comp.canvasMode) {
+      setCanvasMode(comp.canvasMode)
+    }
+    setDrawingTool(comp.id)
+  }
+
+  const modeLabel = { struttura: 'Struttura', piantina: 'Piantina' }
+
+  return (
+    <div style={{ padding: '8px 10px' }}>
+      <div style={{ fontSize: 10, color: '#607080', marginBottom: 8, lineHeight: 1.4 }}>
+        Seleziona un elemento · si attiva automaticamente la modalità corretta
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {LIBRARY_COMPONENTS.map(comp => {
+          const active = drawingTool === comp.id
+          const wrongMode = comp.canvasMode && canvasMode !== comp.canvasMode
+          return (
+            <button
+              key={comp.id}
+              style={{
+                ...C.toolBtn(active),
+                borderColor: active ? comp.color : '#1e3050',
+                color: active ? comp.color : '#a0aec0',
+                background: active ? comp.color + '18' : '#0d1b2a',
+              }}
+              onClick={() => handleSelect(comp)}
+            >
+              <span style={{ ...C.toolIcon, color: comp.color }}>{comp.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{comp.label}</span>
+                  <span style={{ fontSize: 9, color: '#405060', background: '#0a1322', padding: '1px 4px', borderRadius: 3 }}>
+                    {comp.ifcClass}
+                  </span>
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 400, color: wrongMode && !active ? '#e67e22' : '#405060' }}>
+                  {wrongMode && !active
+                    ? `⚡ switcha in modalità ${modeLabel[comp.canvasMode]}`
+                    : comp.hint}
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ ...C.hint, marginTop: 8 }}>
+        ESC per tornare alla selezione
+      </div>
+    </div>
+  )
+}
+
 // ─── Collapsible section header ─────────────────────────────────────────────
 function SectionHeader({ label, open, onToggle }) {
   return (
@@ -310,26 +375,23 @@ export default function LeftPanel() {
   const isStruttura = canvasMode === 'struttura'
   const tools = isStruttura ? STRUTTURA_TOOLS : PIANTINA_TOOLS
 
-  const [toolsOpen, setToolsOpen] = useState(true)
+  const [toolsOpen,  setToolsOpen]  = useState(true)
   const [secondOpen, setSecondOpen] = useState(true)
+  const [libOpen,    setLibOpen]    = useState(true)
 
   return (
     <div style={C.panel}>
       {/* ── Strumenti di Disegno ── */}
-      <SectionHeader
-        label="Strumenti di Disegno"
-        open={toolsOpen}
-        onToggle={() => setToolsOpen(o => !o)}
-      />
+      <SectionHeader label="Strumenti di Disegno" open={toolsOpen} onToggle={() => setToolsOpen(o => !o)} />
       {toolsOpen && <DrawingTools tools={tools} />}
 
       {/* ── Strutture / Piantina ── */}
-      <SectionHeader
-        label={isStruttura ? 'Strutture' : 'Piantina'}
-        open={secondOpen}
-        onToggle={() => setSecondOpen(o => !o)}
-      />
+      <SectionHeader label={isStruttura ? 'Strutture' : 'Piantina'} open={secondOpen} onToggle={() => setSecondOpen(o => !o)} />
       {secondOpen && (isStruttura ? <StrutturePanel /> : <PiantinaPanel />)}
+
+      {/* ── Libreria Componenti ── */}
+      <SectionHeader label="Libreria Componenti" open={libOpen} onToggle={() => setLibOpen(o => !o)} />
+      {libOpen && <LibraryPanel />}
     </div>
   )
 }

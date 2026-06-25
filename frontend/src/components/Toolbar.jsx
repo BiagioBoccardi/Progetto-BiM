@@ -41,6 +41,8 @@ export default function Toolbar() {
     currentProfile, localComponents,
     saveProfile, validate, exportIFC,
     goToProjects, projectName, status,
+    undo, redo, history, future,
+    logout, currentUser,
   } = useAppStore()
 
   const hasProfile = !!currentProfile
@@ -102,8 +104,32 @@ export default function Toolbar() {
         <button style={s.btn(detailLevel === 'detailed')} onClick={() => setDetailLevel('detailed')}>Detailed</button>
       </div>
 
+      <div style={s.sep} />
+
+      {/* Undo / Redo */}
+      <div style={s.group}>
+        <button
+          style={{ ...s.btn(false), opacity: history.length ? 1 : 0.35, cursor: history.length ? 'pointer' : 'not-allowed', fontSize: 15, padding: '3px 10px' }}
+          disabled={!history.length}
+          onClick={undo}
+          title="Annulla (Undo)"
+        >↩</button>
+        <button
+          style={{ ...s.btn(false), opacity: future.length ? 1 : 0.35, cursor: future.length ? 'pointer' : 'not-allowed', fontSize: 15, padding: '3px 10px' }}
+          disabled={!future.length}
+          onClick={redo}
+          title="Ripristina (Redo)"
+        >↪</button>
+      </div>
+
       {/* Stato */}
       {status.message && <span style={s.status(status.type)}>{status.message}</span>}
+
+      {/* Utente + logout */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {currentUser && <span style={{ fontSize: 11, color: '#405060' }}>👤 {currentUser}</span>}
+        <button style={{ ...s.btn(false, '#e74c3c'), padding: '3px 10px' }} onClick={logout} title="Esci">⏻</button>
+      </div>
     </div>
   )
 }

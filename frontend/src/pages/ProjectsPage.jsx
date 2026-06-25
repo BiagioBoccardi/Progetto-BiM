@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import useAppStore from '../store/useAppStore.js'
 import * as apiClient from '../api/client.js'
 
+const trashIcon = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </svg>
+)
+
 const S = {
   page: {
     minHeight: '100vh', background: 'radial-gradient(ellipse at 20% 50%, #0f1e3a 0%, #0a1020 70%)',
@@ -97,8 +103,9 @@ function NewProjectDialog({ onConfirm, onCancel }) {
 }
 
 // ─── Project card ─────────────────────────────────────────────────────────────
-function ProjectCard({ id, onOpen }) {
+function ProjectCard({ id, onOpen, onDelete }) {
   const [meta, setMeta] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     apiClient.getProfile(id)
@@ -112,7 +119,29 @@ function ProjectCard({ id, onOpen }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e3050'; e.currentTarget.style.transform = 'none' }}
     >
       <div>
-        <div style={S.cardIcon}>🏗</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={S.cardIcon}>🏗</div>
+          {confirmDelete ? (
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                onClick={e => { e.stopPropagation(); onDelete(id); setConfirmDelete(false) }}
+                style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#c0392b', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+              >Sì</button>
+              <button
+                onClick={e => { e.stopPropagation(); setConfirmDelete(false) }}
+                style={{ padding: '2px 8px', borderRadius: 4, border: '1px solid #1e3050', background: 'transparent', color: '#607080', fontSize: 11, cursor: 'pointer' }}
+              >No</button>
+            </div>
+          ) : (
+            <button
+              onClick={e => { e.stopPropagation(); setConfirmDelete(true) }}
+              title="Elimina progetto"
+              style={{ background: 'none', border: 'none', color: '#405060', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#e74c3c' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#405060' }}
+            >{trashIcon}</button>
+          )}
+        </div>
         <div style={S.cardName}>{id}</div>
         <div style={S.cardMeta}>
           {meta ? `${meta.count} componenti` : 'Caricamento…'}
@@ -157,15 +186,80 @@ function Toast({ status, onDismiss }) {
   )
 }
 
+// ─── User avatar + logout dropdown ───────────────────────────────────────────
+function UserMenu() {
+  const { currentUser, logout } = useAppStore()
+  const [open, setOpen] = useState(false)
+  const ref = useRef()
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const initial = (currentUser || '?')[0].toUpperCase()
+
+  return (
+    <div ref={ref} style={{ position: 'fixed', top: 20, right: 24, zIndex: 300 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title={currentUser}
+        style={{
+          width: 38, height: 38, borderRadius: '50%', border: '2px solid #e94560',
+          background: '#1a0d18', color: '#e94560', fontWeight: 800, fontSize: 15,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#2a1020' }}
+        onMouseLeave={e => { e.currentTarget.style.background = '#1a0d18' }}
+      >
+        {initial}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 46, right: 0, minWidth: 180,
+          background: '#0d1b2a', border: '1px solid #1e3050', borderRadius: 10,
+          boxShadow: '0 12px 40px #00000099', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #1e3050' }}>
+            <div style={{ fontSize: 11, color: '#405060', fontWeight: 600, letterSpacing: 0.5 }}>UTENTE</div>
+            <div style={{ fontSize: 13, color: '#e0e0e0', fontWeight: 700, marginTop: 2 }}>{currentUser}</div>
+          </div>
+          <button
+            onClick={() => { setOpen(false); logout() }}
+            style={{
+              width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+              textAlign: 'left', color: '#e74c3c', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#1a0808' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Esci dall'account
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProjectsPage() {
-  const { profileIds, loadProfiles, openNewProject, openExistingProject, status, setStatus } = useAppStore()
+  const { profileIds, loadProfiles, openNewProject, openExistingProject, deleteProfile, status, setStatus } = useAppStore()
   const [showDialog, setShowDialog] = useState(false)
 
   useEffect(() => { loadProfiles() }, [])
 
   return (
     <div style={S.page}>
+      <UserMenu />
       <Toast status={status} onDismiss={() => setStatus('idle', '')} />
 
       <div style={S.header}>
@@ -186,7 +280,7 @@ export default function ProjectsPage() {
         </button>
 
         {profileIds.map(id => (
-          <ProjectCard key={id} id={id} onOpen={openExistingProject} />
+          <ProjectCard key={id} id={id} onOpen={openExistingProject} onDelete={deleteProfile} />
         ))}
       </div>
 

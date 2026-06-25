@@ -2,11 +2,19 @@ import React, { useState, useEffect } from 'react'
 import useAppStore from '../store/useAppStore.js'
 
 const PARAM_RANGES = {
-  width: [0.1, 2, 0.05],
-  depth: [0.1, 2, 0.05],
-  height: [1, 12, 0.1],
-  length: [0.5, 30, 0.1],
-  thickness: [0.05, 1, 0.05],
+  width:      [0.1, 5,    0.05],
+  depth:      [0.1, 5,    0.05],
+  height:     [0.5, 12,   0.1],
+  length:     [0.5, 30,   0.1],
+  thickness:  [0.05, 1,   0.05],
+  spessore:   [0.03, 0.3, 0.01],
+  davanzale:  [0.3, 2.0,  0.05],
+  alzata:     [0.10, 0.25, 0.01],
+  pedata:     [0.20, 0.40, 0.01],
+  larghezza:  [0.5, 30,   0.1],
+  profondita: [0.5, 30,   0.1],
+  lunghezza:  [0.5, 30,   0.1],
+  beamY:      [1,   12,   0.1],
 }
 
 const s = {
@@ -27,8 +35,10 @@ const s = {
 const CATEGORY_COLOR = { Structure: '#e67e22', Architecture: '#3498db', Detail: '#9b59b6' }
 
 export default function PropertyPanel() {
-  const { currentProfile, localComponents, selectedId, setParameter } = useAppStore()
+  const { currentProfile, localComponents, selectedId, setParameter, setCustomProp, removeCustomProp } = useAppStore()
   const [editing, setEditing] = useState({})
+  const [newKey, setNewKey] = useState('')
+  const [newVal, setNewVal] = useState('')
 
   const components = currentProfile
     ? currentProfile.components
@@ -126,6 +136,48 @@ export default function PropertyPanel() {
             ))}
           </div>
         )}
+
+        {/* ── Proprietà Personalizzate ── */}
+        <div style={{ borderTop: '1px solid #0f3460', paddingTop: 8, marginTop: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#a0aec0', marginBottom: 6 }}>Proprietà personalizzate</div>
+          {Object.entries(component.customProps || {}).map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+              <div style={{ flex: 1, fontSize: 10, color: '#607080', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k}</div>
+              <input
+                value={v}
+                onChange={e => setCustomProp(component.id, k, e.target.value)}
+                style={{ width: 80, padding: '2px 6px', borderRadius: 4, border: '1px solid #1e3050', background: '#0a1322', color: '#e0e0e0', fontSize: 11, outline: 'none' }}
+              />
+              <button onClick={() => removeCustomProp(component.id, k)}
+                style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: '0 2px' }}>×</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+            <input
+              placeholder="chiave"
+              value={newKey}
+              onChange={e => setNewKey(e.target.value)}
+              style={{ flex: 1, padding: '3px 6px', borderRadius: 4, border: '1px solid #1e3050', background: '#0a1322', color: '#e0e0e0', fontSize: 10, outline: 'none' }}
+            />
+            <input
+              placeholder="valore"
+              value={newVal}
+              onChange={e => setNewVal(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newKey.trim()) {
+                  setCustomProp(component.id, newKey.trim(), newVal)
+                  setNewKey(''); setNewVal('')
+                }
+              }}
+              style={{ flex: 1, padding: '3px 6px', borderRadius: 4, border: '1px solid #1e3050', background: '#0a1322', color: '#e0e0e0', fontSize: 10, outline: 'none' }}
+            />
+            <button
+              onClick={() => { if (newKey.trim()) { setCustomProp(component.id, newKey.trim(), newVal); setNewKey(''); setNewVal('') } }}
+              style={{ padding: '3px 8px', borderRadius: 4, border: 'none', background: '#e94560', color: '#fff', fontSize: 11, cursor: 'pointer' }}
+            >+</button>
+          </div>
+          <div style={{ fontSize: 9, color: '#304050', marginTop: 4 }}>Premi Invio o + per aggiungere</div>
+        </div>
 
         <div style={{ borderTop: '1px solid #0f3460', paddingTop: 8, marginTop: 8 }}>
           <div style={{ fontSize: 11, color: '#607080' }}>Generator: <span style={{ color: '#a0aec0' }}>{component.geometry?.generator || 'N/A'}</span></div>

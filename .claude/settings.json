@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PGPASSWORD = '1$i7Aal7'; psql -U postgres -h localhost -p 5432 -d bim_ai -c '\\\\dt' 2>&1)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "PowerShell($env:PGPASSWORD = '1$i7Aal7'; & \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -U postgres -h localhost -p 5432 -d bim_ai -c '\\\\dt' 2>&1)",
+      "PowerShell($env:PGPASSWORD = '1$i7Aal7'; & \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -U postgres -h localhost -p 5432 -d bim_ai -c 'SELECT id, username, created_at FROM users;' 2>&1)",
+      "PowerShell(Invoke-RestMethod -Uri \"http://localhost:8000/health\" -Method GET 2>&1)",
+      "PowerShell($env:PGPASSWORD = '1$i7Aal7'; & \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -U postgres -h localhost -p 5432 -d bim_ai -c 'SELECT id, username, created_at FROM users ORDER BY id;' 2>&1)",
+      "PowerShell($env:PGPASSWORD = '1$i7Aal7'; & \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" -U postgres -h localhost -p 5432 -d bim_ai -c \"DELETE FROM users WHERE username = 'test_check';\" 2>&1)",
+      "Bash(node --input-type=module)",
+      "Bash(npx --yes vite build --mode development)",
+      "Bash(npx vite *)"
+    ]
+  }
+}

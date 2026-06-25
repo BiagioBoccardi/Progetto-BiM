@@ -66,16 +66,85 @@ function Wall({ component }) {
   )
 }
 
+function Door({ component }) {
+  const cv = component._canvas
+  if (!cv) return null
+  const p = component.parameters
+  const x = cv.x * SCALE, z = cv.y * SCALE
+  const w = p.width || 0.9, h = p.height || 2.1
+  return (
+    <mesh position={[x, h / 2, z]}>
+      <boxGeometry args={[w, h, p.spessore || 0.05]} />
+      <meshStandardMaterial color="#9b59b6" transparent opacity={0.85} />
+    </mesh>
+  )
+}
+
+function Window({ component }) {
+  const cv = component._canvas
+  if (!cv) return null
+  const p = component.parameters
+  const x = cv.x * SCALE, z = cv.y * SCALE
+  const w = p.width || 1.2, h = p.height || 1.5
+  const sill = p.davanzale || 0.9
+  return (
+    <mesh position={[x, sill + h / 2, z]}>
+      <boxGeometry args={[w, h, 0.04]} />
+      <meshStandardMaterial color="#1abc9c" transparent opacity={0.5} />
+    </mesh>
+  )
+}
+
+function Slab({ component }) {
+  const cv = component._canvas
+  if (!cv) return null
+  const sx = cv.sx * SCALE, sz = cv.sy * SCALE
+  const ex = cv.ex * SCALE, ez = cv.ey * SCALE
+  const w = Math.abs(ex - sx), d = Math.abs(ez - sz)
+  const thick = component.parameters.thickness || 0.25
+  return (
+    <mesh position={[(sx + ex) / 2, 3, (sz + ez) / 2]}>
+      <boxGeometry args={[w, thick, d]} />
+      <meshStandardMaterial color="#27ae60" transparent opacity={0.65} />
+    </mesh>
+  )
+}
+
+function Stair({ component }) {
+  const cv = component._canvas
+  if (!cv) return null
+  const sx = cv.sx * SCALE, sz = cv.sy * SCALE
+  const ex = cv.ex * SCALE, ez = cv.ey * SCALE
+  const w = Math.abs(ex - sx), l = Math.abs(ez - sz)
+  const alzata = component.parameters.alzata || 0.18
+  const pedata = component.parameters.pedata || 0.28
+  const steps = Math.max(3, Math.round(l / pedata))
+  return (
+    <>
+      {Array.from({ length: steps }, (_, i) => (
+        <mesh key={i} position={[(sx + ex) / 2, alzata * (i + 0.5), sz + (l * i / steps) + l / steps / 2]}>
+          <boxGeometry args={[w, alzata, l / steps]} />
+          <meshStandardMaterial color="#f39c12" transparent opacity={0.85} />
+        </mesh>
+      ))}
+    </>
+  )
+}
+
 function ComponentMesh({ component }) {
   const ifc = component.bim?.ifcClass
-  if (ifc === 'IfcColumn') return <Pillar component={component} />
-  if (ifc === 'IfcBeam') return <Beam component={component} />
-  if (ifc === 'IfcWall') return <Wall component={component} />
+  if (ifc === 'IfcColumn')  return <Pillar component={component} />
+  if (ifc === 'IfcBeam')    return <Beam component={component} />
+  if (ifc === 'IfcWall')    return <Wall component={component} />
+  if (ifc === 'IfcDoor')    return <Door component={component} />
+  if (ifc === 'IfcWindow')  return <Window component={component} />
+  if (ifc === 'IfcSlab')    return <Slab component={component} />
+  if (ifc === 'IfcStair')   return <Stair component={component} />
   return null
 }
 
 export default function Viewer3D() {
-  const { currentProfile, localComponents, detailLevel } = useAppStore()
+  const { currentProfile, localComponents, detailLevel, setViewMode } = useAppStore()
 
   const components = currentProfile ? currentProfile.components.map(c => {
     const lc = localComponents.find(l => l.id === c.id)
@@ -109,6 +178,26 @@ export default function Viewer3D() {
       {/* Nav hint overlay */}
       <div style={{ position: 'absolute', top: 8, left: 8, fontSize: 9, color: '#304050', lineHeight: 1.6, pointerEvents: 'none' }}>
         <div>🖱 Sin: ruota &nbsp;|&nbsp; Des/Med: sposta &nbsp;|&nbsp; Rotella: zoom</div>
+      </div>
+
+      {/* Banner: drawing only in 2D */}
+      <div style={{
+        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+        background: '#0d1b2a', border: '1px solid #1e3050', borderRadius: 8,
+        padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 10,
+        fontSize: 11, color: '#607080', pointerEvents: 'auto',
+      }}>
+        <span>Visualizzazione · il disegno avviene in vista</span>
+        <button
+          onClick={() => setViewMode('2d')}
+          style={{
+            padding: '3px 10px', borderRadius: 4, border: '1px solid #e94560',
+            background: '#e9456018', color: '#e94560', fontSize: 11,
+            fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          2D →
+        </button>
       </div>
 
       <div style={{ position: 'absolute', bottom: 8, right: 8, fontSize: 10, color: '#405060', pointerEvents: 'none' }}>

@@ -27,12 +27,13 @@ def create_profile(
 ) -> dict:
     try:
         model = BuildingModel.from_dict(
-            profile.model_dump(), engine=engine, registry=registry
+            profile.model_dump(), engine=engine, registry=registry,
+            validate_hierarchy=False,
         )
     except (HierarchyError, ParameterError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    store.save(model)
-    return model.to_dict()
+    canvas_data = {c["id"]: c.get("canvasData") for c in profile.model_dump()["components"] if c.get("canvasData")}
+    return store.save(model, canvas_data=canvas_data)
 
 
 @router.get("")
@@ -42,10 +43,10 @@ def list_profiles(store: ProfileStore = Depends(get_store)) -> dict:
 
 @router.get("/{profile_id}")
 def get_profile(profile_id: str, store: ProfileStore = Depends(get_store)) -> dict:
-    model = store.get(profile_id)
-    if model is None:
+    data = store.get_raw(profile_id)
+    if data is None:
         raise HTTPException(status_code=404, detail="Profilo non trovato")
-    return model.to_dict()
+    return data
 
 
 @router.patch("/{profile_id}/components/{component_id}/parameters/{name}")
@@ -92,6 +93,13 @@ def validate_profile(
 def export_ifc(profile_id: str, store: ProfileStore = Depends(get_store)) -> dict:
     model = _require(store, profile_id)
     return model.export_ifc()
+
+
+@router.delete("/{profile_id}", status_code=200)
+def delete_profile(profile_id: str, store: ProfileStore = Depends(get_store)) -> dict:
+    if not store.delete(profile_id):
+        raise HTTPException(status_code=404, detail="Profilo non trovato")
+    return {"deleted": profile_id}
 
 
 def _require(store: ProfileStore, profile_id: str) -> BuildingModel:

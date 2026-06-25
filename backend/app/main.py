@@ -5,13 +5,23 @@ ma kernel, motore geometrico (`blender_jobs`), regole e AI restano moduli isolat
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import ai_router, profiles_router
+from .api import ai_router, auth_router, profiles_router
 from .config import settings
+from .db import init_db
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(profiles_router)
 app.include_router(ai_router)
 

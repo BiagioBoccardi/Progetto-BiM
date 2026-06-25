@@ -31,13 +31,14 @@ class ComponentInstanceDTO(BaseModel):
     type: str
     category: str
     parameters: dict[str, float] = Field(default_factory=dict)
-    connectors: dict[str, str] = Field(default_factory=dict)
+    connectors: dict[str, str | None] = Field(default_factory=dict)
     parent: str | None = None
     children: list[str] = Field(default_factory=list)
     constraints: list[dict[str, Any]] = Field(default_factory=list)
     geometry: GeometryRefDTO
     bim: BimDTO
     semantic: SemanticDTO = Field(default_factory=SemanticDTO)
+    canvasData: dict[str, Any] | None = None
 
 
 class ProfileDTO(BaseModel):

@@ -3,9 +3,9 @@ import * as api from '../api/client.js'
 
 // ─── Component factories ────────────────────────────────────────────────────
 
-let seq = { pillar: 1, beam: 1, wall: 1 }
+let seq = { pillar: 1, beam: 1, wall: 1, door: 1, window: 1, slab: 1, footing: 1, stair: 1 }
 
-function resetSeq() { seq = { pillar: 1, beam: 1, wall: 1 } }
+function resetSeq() { seq = { pillar: 1, beam: 1, wall: 1, door: 1, window: 1, slab: 1, footing: 1, stair: 1 } }
 
 function mkPillar(x, y, height = 3) {
   const id = `Pillar_${String(seq.pillar++).padStart(3, '0')}`
@@ -16,6 +16,7 @@ function mkPillar(x, y, height = 3) {
     geometry: { generator: 'PillarGenerator', generatorVersion: '1.0' },
     bim: { ifcClass: 'IfcColumn' },
     semantic: { tags: ['structure', 'pillar'] },
+    customProps: {},
     _canvas: { x, y },
   }
 }
@@ -31,6 +32,7 @@ function mkBeam(startId, endId, sx, sy, ex, ey, height = 3) {
     geometry: { generator: 'BeamGenerator', generatorVersion: '1.0' },
     bim: { ifcClass: 'IfcBeam' },
     semantic: { tags: ['structure', 'beam'] },
+    customProps: {},
     _canvas: { sx, sy, ex, ey },
   }
 }
@@ -46,9 +48,91 @@ function mkWall(hostId, sx, sy, ex, ey, height = 3) {
     geometry: { generator: 'WallGenerator', generatorVersion: '1.0' },
     bim: { ifcClass: 'IfcWall' },
     semantic: { tags: ['wall'] },
+    customProps: {},
     _canvas: { sx, sy, ex, ey },
   }
 }
+
+function mkDoor(x, y, angle = 0, wallId = null) {
+  const id = `Door_${String(seq.door++).padStart(3, '0')}`
+  return {
+    id, type: 'DoorTypeA', category: 'Architecture',
+    parameters: { width: 0.9, height: 2.1, spessore: 0.05 },
+    connectors: { hostWall: wallId || null }, parent: wallId || null, children: [],
+    constraints: wallId ? [{ type: 'attached_to_parent' }] : [],
+    geometry: { generator: 'DoorGenerator', generatorVersion: '1.0' },
+    bim: { ifcClass: 'IfcDoor' },
+    semantic: { tags: ['door', 'opening'] },
+    customProps: {},
+    _canvas: { x, y, angle },
+  }
+}
+
+function mkWindow(x, y) {
+  const id = `Window_${String(seq.window++).padStart(3, '0')}`
+  return {
+    id, type: 'WindowTypeA', category: 'Architecture',
+    parameters: { width: 1.2, height: 1.5, davanzale: 0.9, spessore: 0.05 },
+    connectors: {}, parent: null, children: [], constraints: [],
+    geometry: { generator: 'WindowGenerator', generatorVersion: '1.0' },
+    bim: { ifcClass: 'IfcWindow' },
+    semantic: { tags: ['window', 'opening'] },
+    customProps: {},
+    _canvas: { x, y },
+  }
+}
+
+function mkSlab(sx, sy, ex, ey) {
+  const id = `Slab_${String(seq.slab++).padStart(3, '0')}`
+  const w = Math.abs(ex - sx) / 50, h = Math.abs(ey - sy) / 50
+  return {
+    id, type: 'SlabTypeA', category: 'Architecture',
+    parameters: { larghezza: Math.max(w, 0.1), profondita: Math.max(h, 0.1), thickness: 0.25 },
+    connectors: {}, parent: null, children: [], constraints: [],
+    geometry: { generator: 'SlabGenerator', generatorVersion: '1.0' },
+    bim: { ifcClass: 'IfcSlab' },
+    semantic: { tags: ['slab', 'floor'] },
+    customProps: {},
+    _canvas: { sx: Math.min(sx, ex), sy: Math.min(sy, ey), ex: Math.max(sx, ex), ey: Math.max(sy, ey) },
+  }
+}
+
+function mkFooting(x, y) {
+  const id = `Footing_${String(seq.footing++).padStart(3, '0')}`
+  return {
+    id, type: 'FootingTypeA', category: 'Structure',
+    parameters: { width: 1.0, depth: 1.0, thickness: 0.5 },
+    connectors: {}, parent: null, children: [], constraints: [],
+    geometry: { generator: 'FootingGenerator', generatorVersion: '1.0' },
+    bim: { ifcClass: 'IfcFooting' },
+    semantic: { tags: ['structure', 'footing', 'foundation'] },
+    customProps: {},
+    _canvas: { x, y },
+  }
+}
+
+function mkStair(sx, sy, ex, ey) {
+  const id = `Stair_${String(seq.stair++).padStart(3, '0')}`
+  const w = Math.abs(ex - sx) / 50, h = Math.abs(ey - sy) / 50
+  return {
+    id, type: 'StairTypeA', category: 'Architecture',
+    parameters: { larghezza: Math.max(w, 0.1), lunghezza: Math.max(h, 0.1), alzata: 0.18, pedata: 0.28 },
+    connectors: {}, parent: null, children: [], constraints: [],
+    geometry: { generator: 'StairGenerator', generatorVersion: '1.0' },
+    bim: { ifcClass: 'IfcStair' },
+    semantic: { tags: ['stair', 'vertical-circulation'] },
+    customProps: {},
+    _canvas: { sx: Math.min(sx, ex), sy: Math.min(sy, ey), ex: Math.max(sx, ex), ey: Math.max(sy, ey) },
+  }
+}
+
+// ─── Library components catalog ────────────────────────────────────────────
+export const LIBRARY_COMPONENTS = [
+  { id: 'slab',   icon: '▬', label: 'Solaio',   hint: '2 click: angolo → angolo', ifcClass: 'IfcSlab',   drawMode: 'rect',  category: 'Architecture', canvasMode: 'piantina', color: '#27ae60' },
+  { id: 'door',   icon: '▯', label: 'Porta',    hint: 'Click per posizionare',    ifcClass: 'IfcDoor',   drawMode: 'point', category: 'Architecture', canvasMode: 'piantina', color: '#9b59b6' },
+  { id: 'window', icon: '▤', label: 'Finestra', hint: 'Click per posizionare',    ifcClass: 'IfcWindow', drawMode: 'point', category: 'Architecture', canvasMode: 'piantina', color: '#1abc9c' },
+  { id: 'stair',  icon: '≡', label: 'Scala',    hint: '2 click: angolo → angolo', ifcClass: 'IfcStair',  drawMode: 'rect',  category: 'Architecture', canvasMode: 'piantina', color: '#f39c12' },
+]
 
 // ─── Structure template definitions ────────────────────────────────────────
 
@@ -307,6 +391,40 @@ function buildPiantinWalls(p) {
 // ─── Store ─────────────────────────────────────────────────────────────────
 
 const useAppStore = create((set, get) => ({
+  // --- auth
+  token: null,
+  currentUser: null,
+  authPage: 'login',   // 'login' | 'register'
+
+  login: async (username, password) => {
+    try {
+      const data = await api.authLogin(username, password)
+      api.setAuthToken(data.access_token)
+      set({ token: data.access_token, currentUser: data.username, status: { type: 'idle', message: '' } })
+      get().loadProfiles()
+    } catch (e) {
+      const msg = e.response?.data?.detail || 'Credenziali non valide'
+      set({ status: { type: 'error', message: msg } })
+    }
+  },
+
+  register: async (username, password) => {
+    try {
+      await api.authRegister(username, password)
+      set({ authPage: 'login', status: { type: 'success', message: 'Registrazione completata! Accedi ora.' } })
+    } catch (e) {
+      const msg = e.response?.data?.detail || 'Errore registrazione'
+      set({ status: { type: 'error', message: msg } })
+    }
+  },
+
+  logout: () => {
+    api.setAuthToken(null)
+    set({ token: null, currentUser: null, page: 'projects', profileIds: [], status: { type: 'idle', message: '' } })
+  },
+
+  setAuthPage: (p) => set({ authPage: p, status: { type: 'idle', message: '' } }),
+
   // --- navigation
   page: 'projects',       // 'projects' | 'editor'
   projectName: '',        // nome del progetto in lavorazione
@@ -315,6 +433,10 @@ const useAppStore = create((set, get) => ({
   profileIds: [],
   currentProfile: null,
   localComponents: [],
+
+  // --- history (undo/redo)
+  history: [],
+  future: [],
 
   // --- selection & view
   selectedId: null,
@@ -336,6 +458,7 @@ const useAppStore = create((set, get) => ({
   aiMode: 'plan',
   pendingPlan: null,
   aiMessages: [],
+  aiLoading: false,
 
   // --- status
   status: { type: 'idle', message: '' },
@@ -354,18 +477,40 @@ const useAppStore = create((set, get) => ({
       structureTemplate: 'rettangolare',
       piantinParams: { ...PIANTINA_DEFAULTS },
       canvasMode: 'struttura', viewMode: '2d',
+      history: [], future: [],
     })
   },
   openExistingProject: async (id) => {
     set({ status: { type: 'loading', message: 'Caricamento...' } })
     try {
       const data = await api.getProfile(id)
-      set({ page: 'editor', projectName: id, currentProfile: data, localComponents: [], selectedId: null, pendingPlan: null, aiMessages: [], status: { type: 'idle', message: '' } })
+      const localComponents = data.components.map(({ canvasData, ...c }) => ({
+        ...c, _canvas: canvasData ?? null,
+      }))
+      set({ page: 'editor', projectName: id, currentProfile: data, localComponents, selectedId: null, pendingPlan: null, aiMessages: [], status: { type: 'idle', message: '' }, history: [], future: [] })
     } catch {
       set({ status: { type: 'error', message: 'Progetto non trovato' } })
     }
   },
   goToProjects: () => set({ page: 'projects', status: { type: 'idle', message: '' } }),
+
+  // ── undo / redo ───────────────────────────────────────────────────────────
+  _pushHistory: () => {
+    const { localComponents, history } = get()
+    set({ history: [...history.slice(-49), [...localComponents]], future: [] })
+  },
+  undo: () => {
+    const { history, future, localComponents } = get()
+    if (!history.length) return
+    const prev = history[history.length - 1]
+    set({ history: history.slice(0, -1), future: [[...localComponents], ...future.slice(0, 49)], localComponents: prev, selectedId: null })
+  },
+  redo: () => {
+    const { history, future, localComponents } = get()
+    if (!future.length) return
+    const next = future[0]
+    set({ future: future.slice(1), history: [...history.slice(-49), [...localComponents]], localComponents: next, selectedId: null })
+  },
 
   // ── setters ────────────────────────────────────────────────────────────────
   setStatus: (type, message) => set({ status: { type, message } }),
@@ -377,6 +522,7 @@ const useAppStore = create((set, get) => ({
   setAIMode: mode => set({ aiMode: mode }),
 
   setStructureTemplate: tmpl => {
+    get()._pushHistory()
     const params = { ...STRUCTURE_TEMPLATES[tmpl].defaults }
     resetSeq()
     let comps = []
@@ -386,35 +532,122 @@ const useAppStore = create((set, get) => ({
     else if (tmpl === 'U') comps = generateU(params)
     set({ structureTemplate: tmpl, structureParams: params, localComponents: comps, currentProfile: null, selectedId: null })
   },
-  setStructureParam: (key, value) => set(s => {
-    const newParams = { ...s.structureParams, [key]: value }
-    resetSeq()
-    let comps = []
-    if (s.structureTemplate === 'rettangolare') comps = generateRettangolare(newParams)
-    else if (s.structureTemplate === 'L') comps = generateL(newParams)
-    else if (s.structureTemplate === 'T') comps = generateT(newParams)
-    else if (s.structureTemplate === 'U') comps = generateU(newParams)
-    return { structureParams: newParams, localComponents: comps, currentProfile: null, selectedId: null }
-  }),
-  // Auto-rigenera la piantina immediatamente ad ogni modifica (slider o forma)
-  setPiantinParam: (key, value) => set(s => {
-    const newParams = { ...s.piantinParams, [key]: value }
-    const structural = s.localComponents.filter(c => c.category === 'Structure')
-    const walls = buildPiantinWalls(newParams)
-    return { piantinParams: newParams, localComponents: [...structural, ...walls], selectedId: null }
-  }),
+  setStructureParam: (key, value) => {
+    get()._pushHistory()
+    set(s => {
+      const newParams = { ...s.structureParams, [key]: value }
+      resetSeq()
+      let comps = []
+      if (s.structureTemplate === 'rettangolare') comps = generateRettangolare(newParams)
+      else if (s.structureTemplate === 'L') comps = generateL(newParams)
+      else if (s.structureTemplate === 'T') comps = generateT(newParams)
+      else if (s.structureTemplate === 'U') comps = generateU(newParams)
+      return { structureParams: newParams, localComponents: comps, currentProfile: null, selectedId: null }
+    })
+  },
+  setPiantinParam: (key, value) => {
+    get()._pushHistory()
+    set(s => {
+      const newParams = { ...s.piantinParams, [key]: value }
+      const structural = s.localComponents.filter(c => c.category === 'Structure')
+      const walls = buildPiantinWalls(newParams)
+      return { piantinParams: newParams, localComponents: [...structural, ...walls], selectedId: null }
+    })
+  },
 
   // ── local drawing ─────────────────────────────────────────────────────────
-  addPillar: (x, y) => set(s => ({ localComponents: [...s.localComponents, mkPillar(x, y)] })),
-  addBeam: (startId, endId, sx, sy, ex, ey) =>
-    set(s => ({ localComponents: [...s.localComponents, mkBeam(startId, endId, sx, sy, ex, ey)] })),
-  addWall: (hostId, sx, sy, ex, ey) =>
-    set(s => ({ localComponents: [...s.localComponents, mkWall(hostId, sx, sy, ex, ey)] })),
+  addPillar:  (x, y) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkPillar(x, y)] })) },
+  addBeam:    (startId, endId, sx, sy, ex, ey) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkBeam(startId, endId, sx, sy, ex, ey)] })) },
+  addWall:    (hostId, sx, sy, ex, ey) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkWall(hostId, sx, sy, ex, ey)] })) },
+  addDoor:    (x, y, angle = 0, wallId = null) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkDoor(x, y, angle, wallId)] })) },
+  addWindow:  (x, y) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkWindow(x, y)] })) },
+  addSlab:    (sx, sy, ex, ey) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkSlab(sx, sy, ex, ey)] })) },
+  addFooting: (x, y) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkFooting(x, y)] })) },
+  addStair:   (sx, sy, ex, ey) => { get()._pushHistory(); set(s => ({ localComponents: [...s.localComponents, mkStair(sx, sy, ex, ey)] })) },
 
-  clearLocal: () => { resetSeq(); set({ localComponents: [], currentProfile: null, selectedId: null, pendingPlan: null }) },
+  setCustomProp: (id, key, value) => {
+    set(s => ({
+      localComponents: s.localComponents.map(c =>
+        c.id !== id ? c : { ...c, customProps: { ...(c.customProps || {}), [key]: value } }
+      ),
+    }))
+  },
+  removeCustomProp: (id, key) => {
+    set(s => ({
+      localComponents: s.localComponents.map(c => {
+        if (c.id !== id) return c
+        const cp = { ...(c.customProps || {}) }
+        delete cp[key]
+        return { ...c, customProps: cp }
+      }),
+    }))
+  },
+
+  deleteComponent: (id) => {
+    get()._pushHistory()
+    set(s => ({ localComponents: s.localComponents.filter(c => c.id !== id), selectedId: null }))
+  },
+
+  deleteComponents: (ids) => {
+    get()._pushHistory()
+    const set_ = new Set(ids)
+    set(s => ({ localComponents: s.localComponents.filter(c => !set_.has(c.id)), selectedId: null }))
+  },
+
+  moveComponents: (ids, dx, dy) => {
+    get()._pushHistory()
+    const set_ = new Set(ids)
+    set(s => ({
+      localComponents: s.localComponents.map(c => {
+        if (!set_.has(c.id)) return c
+        const cv = c._canvas
+        if (cv.x !== undefined)
+          return { ...c, _canvas: { x: cv.x + dx, y: cv.y + dy } }
+        return { ...c, _canvas: { sx: cv.sx + dx, sy: cv.sy + dy, ex: cv.ex + dx, ey: cv.ey + dy } }
+      }),
+    }))
+  },
+
+  duplicateComponent: (id) => {
+    get()._pushHistory()
+    set(s => {
+      const src = s.localComponents.find(c => c.id === id)
+      if (!src) return {}
+      const OFFSET = 50
+      const cv = src._canvas
+      let dup
+      const ifc = src.bim?.ifcClass
+      if (ifc === 'IfcColumn')   dup = mkPillar(cv.x + OFFSET, cv.y + OFFSET, src.parameters.height)
+      else if (ifc === 'IfcBeam') dup = mkBeam(src.connectors.startPillar, src.connectors.endPillar, cv.sx + OFFSET, cv.sy + OFFSET, cv.ex + OFFSET, cv.ey + OFFSET, src.parameters.beamY)
+      else if (ifc === 'IfcDoor')    dup = mkDoor(cv.x + OFFSET, cv.y + OFFSET, cv.angle ?? 0, null)
+      else if (ifc === 'IfcWindow')  dup = mkWindow(cv.x + OFFSET, cv.y + OFFSET)
+      else if (ifc === 'IfcFooting') dup = mkFooting(cv.x + OFFSET, cv.y + OFFSET)
+      else if (ifc === 'IfcSlab')    dup = mkSlab(cv.sx + OFFSET, cv.sy + OFFSET, cv.ex + OFFSET, cv.ey + OFFSET)
+      else if (ifc === 'IfcStair')   dup = mkStair(cv.sx + OFFSET, cv.sy + OFFSET, cv.ex + OFFSET, cv.ey + OFFSET)
+      else dup = mkWall(src.parent, cv.sx + OFFSET, cv.sy + OFFSET, cv.ex + OFFSET, cv.ey + OFFSET, src.parameters.height)
+      if (dup) dup.customProps = { ...src.customProps }
+      return { localComponents: [...s.localComponents, dup] }
+    })
+  },
+
+  moveComponent: (id, dx, dy) => {
+    get()._pushHistory()
+    set(s => ({
+      localComponents: s.localComponents.map(c => {
+        if (c.id !== id) return c
+        const cv = c._canvas
+        if (cv.x !== undefined)
+          return { ...c, _canvas: { x: cv.x + dx, y: cv.y + dy } }
+        return { ...c, _canvas: { sx: cv.sx + dx, sy: cv.sy + dy, ex: cv.ex + dx, ey: cv.ey + dy } }
+      }),
+    }))
+  },
+
+  clearLocal: () => { get()._pushHistory(); resetSeq(); set({ localComponents: [], currentProfile: null, selectedId: null, pendingPlan: null }) },
 
   // ── structure generation ──────────────────────────────────────────────────
   generateStructure: () => {
+    get()._pushHistory()
     const { structureTemplate, structureParams } = get()
     resetSeq()
     let comps = []
@@ -427,6 +660,7 @@ const useAppStore = create((set, get) => ({
 
   // ── piantina generation ──────────────────────────────────────────────────
   generatePiantina: () => {
+    get()._pushHistory()
     const { piantinParams, localComponents } = get()
     const structural = localComponents.filter(c => c.category === 'Structure')
     const walls = buildPiantinWalls(piantinParams)
@@ -440,6 +674,15 @@ const useAppStore = create((set, get) => ({
       set({ profileIds: data.profiles })
     } catch {
       set({ status: { type: 'error', message: 'Backend non raggiungibile' } })
+    }
+  },
+
+  deleteProfile: async (id) => {
+    try {
+      await api.deleteProfile(id)
+      set(s => ({ profileIds: s.profileIds.filter(p => p !== id), status: { type: 'success', message: `Progetto "${id}" eliminato` } }))
+    } catch {
+      set({ status: { type: 'error', message: 'Errore eliminazione progetto' } })
     }
   },
 
@@ -462,7 +705,7 @@ const useAppStore = create((set, get) => ({
     }
     set({ status: { type: 'loading', message: 'Salvataggio...' } })
     const components = localComponents.length
-      ? localComponents.map(({ _canvas, ...c }) => c)
+      ? localComponents.map(({ _canvas, ...c }) => ({ ...c, canvasData: _canvas }))
       : currentProfile.components
     try {
       const data = await api.createProfile({ profileId, components })
@@ -480,7 +723,11 @@ const useAppStore = create((set, get) => ({
         status: { type: 'success', message: `Progetto "${data.profileId}" salvato con successo` },
       })
     } catch (e) {
-      set({ status: { type: 'error', message: e.response?.data?.detail || 'Errore salvataggio' } })
+      const detail = e.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map(d => `${d.loc?.slice(-1)[0]}: ${d.msg}`).join(' | ')
+        : (detail || e.message || 'Errore salvataggio')
+      set({ status: { type: 'error', message: msg } })
     }
   },
 
@@ -533,28 +780,28 @@ const useAppStore = create((set, get) => ({
   sendAICommand: async command => {
     const { currentProfile, aiMode } = get()
     if (!currentProfile) return
-    set(s => ({ aiMessages: [...s.aiMessages, { role: 'user', text: command }], status: { type: 'loading', message: 'AI...' }, pendingPlan: null }))
+    set(s => ({ aiMessages: [...s.aiMessages, { role: 'user', text: command }], aiLoading: true, pendingPlan: null }))
     try {
       const data = await api.sendAICommand(currentProfile.profileId, command, aiMode.toUpperCase())
       const reply = data.applied
         ? `Eseguito. Rigenerati: ${data.affected?.join(', ') || 'nessuno'}`
         : `Piano: ${data.operations?.map(o => `${o.type}(${JSON.stringify(o.args)})`).join(' → ') || '—'}`
-      set(s => ({ aiMessages: [...s.aiMessages, { role: 'assistant', text: reply, raw: data }], pendingPlan: data.applied ? null : data, currentProfile: data.profile || s.currentProfile, status: { type: 'idle', message: '' } }))
+      set(s => ({ aiMessages: [...s.aiMessages, { role: 'assistant', text: reply, raw: data }], pendingPlan: data.applied ? null : data, currentProfile: data.profile || s.currentProfile, aiLoading: false }))
     } catch (e) {
       const msg = e.response?.data?.detail || 'Errore AI'
-      set(s => ({ aiMessages: [...s.aiMessages, { role: 'assistant', text: `Errore: ${msg}` }], status: { type: 'error', message: msg } }))
+      set(s => ({ aiMessages: [...s.aiMessages, { role: 'assistant', text: `Errore: ${msg}` }], aiLoading: false, status: { type: 'error', message: msg } }))
     }
   },
 
   applyPlan: async () => {
     const { currentProfile, pendingPlan } = get()
     if (!currentProfile || !pendingPlan) return
-    set({ status: { type: 'loading', message: 'Applicazione piano...' } })
+    set({ aiLoading: true })
     try {
       const data = await api.applyPlan(currentProfile.profileId, pendingPlan.command, pendingPlan.operations)
-      set(s => ({ currentProfile: data.profile, pendingPlan: null, aiMessages: [...s.aiMessages, { role: 'assistant', text: `Piano applicato. Componenti: ${data.affected?.join(', ') || 'nessuno'}` }], status: { type: 'success', message: 'Piano applicato' } }))
+      set(s => ({ currentProfile: data.profile, pendingPlan: null, aiMessages: [...s.aiMessages, { role: 'assistant', text: `Piano applicato. Componenti: ${data.affected?.join(', ') || 'nessuno'}` }], aiLoading: false, status: { type: 'success', message: 'Piano applicato' } }))
     } catch (e) {
-      set({ status: { type: 'error', message: e.response?.data?.detail || 'Errore' } })
+      set({ aiLoading: false, status: { type: 'error', message: e.response?.data?.detail || 'Errore' } })
     }
   },
 
